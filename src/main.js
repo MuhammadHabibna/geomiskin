@@ -35,17 +35,42 @@ window.AppStore = {
   }
 };
 
+// Robust fetch helper with multi-path fallback to support Vite dev server, 
+// production build, and traditional web servers (e.g. Live Server, Python http.server)
+async function fetchAsset(path) {
+  const fallbacks = [
+    path,                              // Primary path, e.g. '/data/geojson_38.json'
+    `/public${path}`,                  // Fallback for Live Server / python http.server from dashboard/
+    `.${path}`,                        // Relative path fallback
+    `./public${path}`                  // Relative path with public fallback
+  ];
+
+  let lastError = null;
+  for (const url of fallbacks) {
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        return resp;
+      }
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  
+  throw new Error(`Failed to load asset from ${path}. Last error: ${lastError ? lastError.message : 'Unknown'}`);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log("GEOMISKIN Dashboard Initializing...");
   
   try {
-    // 1. Parallel loading of all integrated JSON assets
+    // 1. Parallel loading of all integrated JSON assets using the robust fetchAsset helper
     const [geojsonResp, provincesResp, profilesResp, evalResp, lisaResp] = await Promise.all([
-      fetch('/data/geojson_38.json'),
-      fetch('/data/provinces.json'),
-      fetch('/data/cluster_profiles.json'),
-      fetch('/data/cluster_evaluation.json'),
-      fetch('/data/lisa_summary.json')
+      fetchAsset('/data/geojson_38.json'),
+      fetchAsset('/data/provinces.json'),
+      fetchAsset('/data/cluster_profiles.json'),
+      fetchAsset('/data/cluster_evaluation.json'),
+      fetchAsset('/data/lisa_summary.json')
     ]);
 
     window.AppStore.geojson = await geojsonResp.json();
@@ -82,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   } catch (error) {
     console.error("Critical error loading dashboard assets:", error);
-    alert("Gagal memuat data spasial. Pastikan script python/build_data.py sudah dijalankan.");
+    alert("Gagal memuat data spasial.\n\nDetail Error: " + error.message + "\n\nPastikan Anda telah menjalankan server lokal (seperti 'npm run dev' atau server HTTP lain) dan tidak membuka file HTML langsung dengan double-click.");
   }
 });
 
