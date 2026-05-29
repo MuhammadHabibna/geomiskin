@@ -1,0 +1,37 @@
+[
+  {
+    "k": 2,
+    "linkage": "ward",
+    "min_members": 8,
+    "silhouette": 0.3119738650652564,
+    "davies_bouldin": 1.5810879956206254
+  },
+  {
+    "k": 3,
+    "linkage": "ward",
+    "min_members": 1,
+    "silhouette": 0.3246254928280574,
+    "davies_bouldin": 1.17087298108071
+  },
+  {
+    "k": 4,
+    "linkage": "ward",
+    "min_members": 1,
+    "silhouette": 0.2804358177721842,
+    "davies_bouldin": 0.9712957527683262
+  },
+  {
+    "k": 5,
+    "linkage": "ward",
+    "min_members": 1,
+    "silhouette": 0.1280850032343047,
+    "davies_bouldin": 1.2110152362933977
+  },
+  {
+    "k": 6,
+    "linkage": "ward",
+    "min_members": 1,
+    "silhouette": 0.1229204895963218,
+    "davies_bouldin": 1.297081832453135
+  }
+]

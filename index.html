@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GEOMISKIN — Spatial Mining Dashboard Kelompok 7</title>
+  
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+
+  <!-- ==================== PREMIUM GLOW EFFECT ==================== -->
+  <div class="ambient-glow"></div>
+
+  <!-- ==================== MAIN HEADER ==================== -->
+  <header class="main-header">
+    <div class="header-overlay"></div>
+    <div class="header-content">
+      <div class="header-left">
+        <div class="brand-container">
+          <span class="brand-icon">🗺️</span>
+          <div class="brand-titles">
+            <h1>GEOMISKIN</h1>
+            <span class="sub-brand">Spatial Mining Dashboard — Kelompok 7</span>
+          </div>
+        </div>
+        <p class="header-desc">
+          Analisis Spasial Ketimpangan Kemiskinan &amp; Klasterisasi Kesejahteraan Provinsi di Indonesia
+        </p>
+      </div>
+      <div class="header-right">
+        <div class="meta-badge-container">
+          <span class="meta-badge primary-badge">
+            <span class="badge-dot pulse"></span> Data Riil 2025
+          </span>
+          <span class="meta-badge secondary-badge">38 Provinsi</span>
+          <span class="meta-badge warning-badge">UNESA 2024E</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== STICKY NAV ==================== -->
+  <nav class="sticky-nav">
+    <div class="nav-container">
+      <div class="nav-tabs" id="nav-tabs">
+        <button class="nav-tab active" data-tab="overview">
+          <span class="tab-icon">📊</span> Overview
+        </button>
+        <button class="nav-tab" data-tab="bivariate">
+          <span class="tab-icon">🗺️</span> Bivariate
+        </button>
+        <button class="nav-tab" data-tab="lisa">
+          <span class="tab-icon">🎯</span> Hotspot (LISA)
+        </button>
+        <button class="nav-tab" data-tab="clustering">
+          <span class="tab-icon">🔬</span> Spatial Clustering
+        </button>
+        <button class="nav-tab" data-tab="about">
+          <span class="tab-icon">ℹ️</span> About
+        </button>
+      </div>
+      <div class="nav-extra" id="anomaly-badge-holder">
+        <!-- Will show anomaly indicator if active -->
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== LOADING OVERLAY ==================== -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="loader-content">
+      <div class="spinner">
+        <div class="double-bounce1"></div>
+        <div class="double-bounce2"></div>
+      </div>
+      <p>Mengintegrasikan Data Spasial...</p>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN CONTENTS ==================== -->
+  <main class="main-content">
+
+    <!-- 1. TAB: OVERVIEW -->
+    <section id="tab-overview" class="tab-panel active">
+      <!-- Stat Grid -->
+      <div class="stat-grid" id="overview-stats">
+        <!-- Stat cards will be dynamically injected with counter animations -->
+      </div>
+
+      <!-- Layout: Peta & Sidebar -->
+      <div class="dashboard-layout">
+        <div class="map-wrapper card">
+          <div class="card-header">
+            <h3>Peta Choropleth Kemiskinan Provinsi</h3>
+            <span class="card-subtitle">Visualisasi spasial persentase penduduk miskin tahun 2025</span>
+          </div>
+          <div class="map-body">
+            <div id="map-overview" class="map-container"></div>
+          </div>
+        </div>
+        
+        <aside class="sidebar-wrapper">
+          <!-- Info Panel -->
+          <div class="card info-card" id="info-overview">
+            <!-- Dynamic context on hover/click -->
+          </div>
+
+          <!-- Mini Rankings -->
+          <div class="card rank-card">
+            <div class="card-header">
+              <h3>Kesenjangan Wilayah</h3>
+              <span class="card-subtitle">Perbandingan Ekstrem Kemiskinan</span>
+            </div>
+            <div class="rank-body" id="rank-extreme">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Table Section -->
+      <div class="full-width-section card">
+        <div class="card-header flex-header">
+          <div>
+            <h3>Tabel Deskriptif Indikator Spasial</h3>
+            <span class="card-subtitle">Daftar lengkap 38 provinsi di Indonesia beserta 5 indikator utama</span>
+          </div>
+          <div class="header-actions">
+            <input type="text" id="overview-search" placeholder="Cari Provinsi..." class="search-input" />
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="premium-table" id="overview-table">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="Provinsi">Provinsi</th>
+                <th class="sortable text-right" data-sort="Persentase Penduduk Miskin (%)">Kemiskinan (%)</th>
+                <th class="sortable text-right" data-sort="Indeks Pembangunan Manusia (IPM)">IPM</th>
+                <th class="sortable text-right" data-sort="Indeks Ketahanan Pangan (IKP)">IKP</th>
+                <th class="sortable text-center" data-sort="cluster">Klaster</th>
+                <th class="sortable text-center" data-sort="lisa_label">Autokorelasi (LISA)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 2. TAB: BIVARIATE -->
+      <section id="tab-bivariate" class="tab-panel">
+        <div class="dashboard-layout double-main">
+          
+          <!-- Column 1: Map -->
+          <div class="map-wrapper card">
+            <div class="card-header flex-header">
+              <div>
+                <h3>Peta Bivariate Spasial</h3>
+                <span class="card-subtitle">Hubungan Spasial Dua Variabel Secara Simultan</span>
+              </div>
+              <div class="bivariate-selectors">
+                <div class="select-wrapper">
+                  <label for="select-var-x">Variabel X (Horizontal)</label>
+                  <select id="select-var-x" class="premium-select"></select>
+                </div>
+                <div class="select-wrapper">
+                  <label for="select-var-y">Variabel Y (Vertikal)</label>
+                  <select id="select-var-y" class="premium-select"></select>
+                </div>
+              </div>
+            </div>
+            <div class="map-body">
+              <div id="map-bivariate" class="map-container"></div>
+            </div>
+          </div>
+
+          <!-- Column 2: Plot & Legend -->
+          <aside class="sidebar-wrapper flex-sidebar">
+            <div class="card legend-card">
+              <div class="card-header">
+                <h3>Bivariate 3x3 Grid Legend</h3>
+              </div>
+              <div class="bivariate-legend-body">
+                <div class="bivariate-legend-container" id="bivariate-grid-legend"></div>
+                <div class="bivariate-legend-description">
+                  <p class="legend-instruction">Gunakan dropdown variabel untuk menganalisis hubungan spasial. Kotak 3x3 menunjukkan gradasi persilangan nilai tinggi-rendah variabel X dan Y.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Scatter Plot -->
+            <div class="card scatter-card flex-grow-card">
+              <div class="card-header">
+                <h3>Sebaran Korelasi &amp; Tren (OLS)</h3>
+                <span class="card-subtitle">Visualisasi scatter plot interaktif</span>
+              </div>
+              <div class="chart-body flex-chart">
+                <div id="plotly-bivariate" class="plotly-container"></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 3. TAB: HOTSPOT (LISA) -->
+      <section id="tab-lisa" class="tab-panel">
+        <!-- Stat Grid -->
+        <div class="stat-grid" id="lisa-stats">
+          <!-- Injected with global Moran values -->
+        </div>
+
+        <div class="dashboard-layout">
+          <div class="map-wrapper card">
+            <div class="card-header">
+              <h3>Peta LISA (Local Indicators of Spatial Association)</h3>
+              <span class="card-subtitle">Identifikasi autokorelasi spasial lokal kemiskinan (p-value &lt; 0.05 memiliki border solid)</span>
+            </div>
+            <div class="map-body">
+              <div id="map-lisa" class="map-container"></div>
+            </div>
+          </div>
+          
+          <aside class="sidebar-wrapper">
+            <div class="card quadrant-card">
+              <div class="card-header">
+                <h3>Interpretasi Kuadran LISA</h3>
+                <span class="card-subtitle">Kategori dependensi spasial</span>
+              </div>
+              <div class="quadrant-body" id="lisa-quadrants">
+                <!-- Dynamically filled with interactive cards -->
+              </div>
+            </div>
+            
+            <div class="card lisa-scatter-card">
+              <div class="card-header">
+                <h3>Moran Scatterplot</h3>
+                <span class="card-subtitle">Kemiskinan Terstandarisasi vs Spatially Lagged</span>
+              </div>
+              <div class="chart-body">
+                <div id="plotly-lisa-scatter" class="plotly-container"></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Table Section -->
+        <div class="full-width-section card">
+          <div class="card-header">
+            <h3>Daftar Signifikansi Autokorelasi Lokal</h3>
+            <span class="card-subtitle">Rincian nilai Z-Score, P-Value, dan Signifikansi per Provinsi</span>
+          </div>
+          <div class="table-container">
+            <table class="premium-table" id="lisa-table">
+              <thead>
+                <tr>
+                  <th>Provinsi</th>
+                  <th class="text-right">Kemiskinan (%)</th>
+                  <th class="text-right">Z-Score Spasial</th>
+                  <th class="text-right">P-Value</th>
+                  <th class="text-center">Kuadran LISA</th>
+                  <th class="text-center">Signifikansi Spasial</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- LISA details row -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. TAB: SPATIAL CLUSTERING -->
+      <section id="tab-clustering" class="tab-panel">
+        
+        <!-- Toggle Layout / Modes -->
+        <div class="mode-control-header card">
+          <div class="mode-header-title">
+            <span class="section-badge">🔬 METODE ADVANCED</span>
+            <h3>Spatially Constrained Hierarchical Clustering</h3>
+            <p>Pengelompokkan wilayah berdasarkan 15 indikator kesejahteraan dengan batasan ketetanggaan wilayah (Contiguity Constraint)</p>
+          </div>
+          <div class="mode-buttons">
+            <button class="mode-btn active" id="mode-btn-layer">🟢 Single Layer View</button>
+            <button class="mode-btn" id="mode-btn-comparison">🗺️ Side-by-Side Comparison</button>
+          </div>
+        </div>
+
+        <!-- Single Map Layer View -->
+        <div class="dashboard-layout" id="cluster-single-layout">
+          <div class="map-wrapper card">
+            <div class="card-header flex-header">
+              <div>
+                <h3>Peta Klasterisasi Kesejahteraan</h3>
+                <span class="card-subtitle">Distribusi spasial 3 klaster optimal</span>
+              </div>
+              <div class="custom-legend-toggle" id="cluster-layer-legend-label"></div>
+            </div>
+            <div class="map-body">
+              <div id="map-cluster" class="map-container"></div>
+            </div>
+          </div>
+          
+          <aside class="sidebar-wrapper">
+            <!-- Profil Klaster -->
+            <div class="card cluster-info-card" id="cluster-summary-card">
+              <!-- Cluster description card -->
+            </div>
+            
+            <!-- Silhouette & DBI Plot -->
+            <div class="card evaluation-card">
+              <div class="card-header">
+                <h3>Evaluasi Jumlah Klaster (k)</h3>
+                <span class="card-subtitle">Silhouette Score &amp; Davies-Bouldin Index (Ward Linkage)</span>
+              </div>
+              <div class="chart-body">
+                <div id="plotly-cluster-eval" class="plotly-container"></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Dual Map Comparison View -->
+        <div class="comparison-layout hidden" id="cluster-comparison-layout">
+          <div class="comparison-card card">
+            <div class="card-header">
+              <h3>1. Klasterisasi Spasial (SC-Clustering)</h3>
+              <span class="card-subtitle">3 Klaster Kesejahteraan Multidimensi</span>
+            </div>
+            <div class="map-body-comp">
+              <div id="map-comp-cluster" class="map-container-comp"></div>
+            </div>
+          </div>
+          <div class="comparison-card card">
+            <div class="card-header">
+              <h3>2. Analisis Hotspot Spasial (LISA)</h3>
+              <span class="card-subtitle">Seberan Autokorelasi Lokal Kemiskinan</span>
+            </div>
+            <div class="map-body-comp">
+              <div id="map-comp-lisa" class="map-container-comp"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Detail Grids -->
+        <div class="profile-cards-section" id="cluster-profiles-container">
+          <!-- Profiles per Cluster: Rentan, Menengah, Metropolitan -->
+        </div>
+
+        <!-- Bar Charts and Profiling Charts -->
+        <div class="full-width-section grid-section">
+          <div class="card plotly-bar-card">
+            <div class="card-header">
+              <h3>Karakteristik Indikator Utama per Klaster</h3>
+              <span class="card-subtitle">Rata-rata 6 indikator terpilih yang membedakan karakteristik klaster</span>
+            </div>
+            <div class="chart-body">
+              <div id="plotly-cluster-bar" class="plotly-container bar-plotly"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. TAB: ABOUT -->
+      <section id="tab-about" class="tab-panel">
+        <div class="dashboard-layout about-grid">
+          
+          <!-- Column 1: System and Team -->
+          <div class="about-main-panel">
+            
+            <div class="card method-card">
+              <div class="card-header">
+                <h3>Metodologi Spatial Data Mining</h3>
+                <span class="card-subtitle">Siklus pengolahan data dari hulu ke hilir</span>
+              </div>
+              <div class="method-body">
+                <div class="step-card">
+                  <div class="step-num">01</div>
+                  <div class="step-details">
+                    <h4>ESDA &amp; Preprocessing</h4>
+                    <p>Integrasi 15 indikator dari BPS &amp; Kemenkes, normalisasi Z-Score, imputasi data kosong, dan penanganan outliers data spasial.</p>
+                  </div>
+                </div>
+                
+                <div class="step-card">
+                  <div class="step-num">02</div>
+                  <div class="step-details">
+                    <h4>Local Autocorrelation (LISA)</h4>
+                    <p>Mengidentifikasi klaster spasial lokal (Hotspot High-High, Coldspot Low-Low, Outliers) menggunakan bobot spasial contiguity (Queen Constraint).</p>
+                  </div>
+                </div>
+                
+                <div class="step-card">
+                  <div class="step-num">03</div>
+                  <div class="step-details">
+                    <h4>Spatially Constrained Clustering</h4>
+                    <p>Pengelompokkan wilayah dengan kendala keterhubungan spasial (Spatially Constrained Hierarchical Clustering) untuk menjamin daerah dalam satu klaster secara geografis bersebelahan.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Team Panel -->
+            <div class="card team-card">
+              <div class="card-header">
+                <h3>Kelompok 7 • Kelas 2024E</h3>
+                <span class="card-subtitle">Program Studi S1 Ilmu Komputer, Universitas Negeri Surabaya</span>
+              </div>
+              <div class="team-grid">
+                <div class="member-card">
+                  <div class="member-avatar">HE</div>
+                  <div class="member-info">
+                    <h4>Habib</h4>
+                    <span class="member-role">Data &amp; GIS Engineer</span>
+                    <p>Integrasi dataset BPS, penyusunan GeoJSON, dan visualisasi Leaflet.</p>
+                  </div>
+                </div>
+                <div class="member-card">
+                  <div class="member-avatar">NA</div>
+                  <div class="member-info">
+                    <h4>Niha</h4>
+                    <span class="member-role">Spatial Analysis Expert</span>
+                    <p>Pemrosesan Moran's I Global, LISA Local Autocorrelation, dan OLS.</p>
+                  </div>
+                </div>
+                <div class="member-card">
+                  <div class="member-avatar">FY</div>
+                  <div class="member-info">
+                    <h4>Fadly</h4>
+                    <span class="member-role">Preprocessing &amp; Cluster Analyst</span>
+                    <p>Hierarchical clustering, PCA/UMAP, dan evaluasi Silhouette &amp; DBI.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Data Variables and Technical -->
+          <div class="about-sidebar-panel">
+            <div class="card tech-card">
+              <div class="card-header">
+                <h3>Tech Stack &amp; Arsitektur</h3>
+                <span class="card-subtitle">Teknologi premium yang mendukung dashboard</span>
+              </div>
+              <div class="tech-body">
+                <div class="tech-pills">
+                  <span class="tech-pill">Vite 6.x</span>
+                  <span class="tech-pill">Leaflet 1.9</span>
+                  <span class="tech-pill">Plotly.js</span>
+                  <span class="tech-pill">Python</span>
+                  <span class="tech-pill">Pandas</span>
+                  <span class="tech-pill">GeoJSON</span>
+                  <span class="tech-pill">HTML5/CSS3</span>
+                </div>
+                <hr class="card-divider"/>
+                <h4>Sumber Data Aktual</h4>
+                <ul class="data-sources-list">
+                  <li><strong>Badan Pusat Statistik (BPS) 2025</strong> — Angka Kemiskinan, Gini Ratio, IPM, Kepadatan Penduduk.</li>
+                  <li><strong>Kementerian Kesehatan (Kemenkes) 2025</strong> — Prevalensi Stunting &amp; Jumlah Tenaga Medis.</li>
+                  <li><strong>Badan Pangan Nasional 2025</strong> — Indeks Ketahanan Pangan (IKP).</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Variables list -->
+            <div class="card vars-card">
+              <div class="card-header">
+                <h3>Indikator Analisis (15 Variabel)</h3>
+                <span class="card-subtitle">Variabel penentu klaster kesejahteraan wilayah</span>
+              </div>
+              <div class="vars-body scrollable-body">
+                <table class="premium-table mini-table">
+                  <thead>
+                    <tr>
+                      <th>Variabel</th>
+                      <th>Deskripsi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><strong>Kemiskinan (%)</strong></td><td>Persentase penduduk di bawah garis kemiskinan</td></tr>
+                    <tr><td><strong>IPM</strong></td><td>Indeks Pembangunan Manusia (Kesehatan, Pengetahuan, Ekonomi)</td></tr>
+                    <tr><td><strong>Rerata Sekolah (RLS)</strong></td><td>Rata-rata lamanya sekolah penduduk usia 25 tahun ke atas</td></tr>
+                    <tr><td><strong>Harapan Sekolah (HLS)</strong></td><td>Harapan lamanya sekolah anak usia 7 tahun ke atas</td></tr>
+                    <tr><td><strong>Pengeluaran/Kapita</strong></td><td>Rata-rata pengeluaran per kapita disesuaikan (Rupiah)</td></tr>
+                    <tr><td><strong>Sanitasi Layak (%)</strong></td><td>Persentase RT dengan akses fasilitas sanitasi layak</td></tr>
+                    <tr><td><strong>Air Minum Layak (%)</strong></td><td>Persentase RT dengan akses sumber air minum layak</td></tr>
+                    <tr><td><strong>Ketidakcukupan Konsumsi</strong></td><td>Prevalensi ketidakcukupan konsumsi pangan (%)</td></tr>
+                    <tr><td><strong>IKP</strong></td><td>Indeks Ketahanan Pangan wilayah</td></tr>
+                    <tr><td><strong>Gini Ratio</strong></td><td>Indeks ketimpangan pengeluaran penduduk</td></tr>
+                    <tr><td><strong>Kepadatan Penduduk</strong></td><td>Jumlah penduduk per kilometer persegi</td></tr>
+                    <tr><td><strong>Tenaga Kesehatan</strong></td><td>Jumlah total tenaga kesehatan (dokter, perawat, dll)</td></tr>
+                    <tr><td><strong>TPT (%)</strong></td><td>Tingkat Pengangguran Terbuka</td></tr>
+                    <tr><td><strong>Pertumbuhan Ekonomi</strong></td><td>Laju pertumbuhan PDRB atas dasar harga konstan (%)</td></tr>
+                    <tr><td><strong>Pekerja Pertanian (%)</strong></td><td>Persentase tenaga kerja di sektor primer pertanian</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+  </main>
+
+  <!-- ==================== PREMIUM FOOTER ==================== -->
+  <footer class="main-footer">
+    <p>&copy; 2026 GEOMISKIN — Kelompok 7 Penambangan Data. Universitas Negeri Surabaya. All rights reserved.</p>
+  </footer>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-2.35.0.min.js" charset="utf-8"></script>
+  
+  <!-- Core Application -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

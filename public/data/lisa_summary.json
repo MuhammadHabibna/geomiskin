@@ -1,0 +1,15 @@
+{
+  "moran_i": 0.364,
+  "p_value": 0.002,
+  "z_score": 3.42,
+  "counts": {
+    "Not Significant": 23,
+    "Low-Low": 7,
+    "High-High": 5,
+    "High-Low": 3
+  },
+  "significance": {
+    "Not Significant": 23,
+    "Significant": 15
+  }
+}
